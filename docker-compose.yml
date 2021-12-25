@@ -1,0 +1,51 @@
+version: '3.7'
+
+networks:
+  mynet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.0.0/24
+
+services:
+  postgres:
+    container_name: postgres_cont
+    image: postgres
+    environment:
+      POSTGRES_DB: testdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+      PGDATA: /data/postgres
+    volumes:
+      - .:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    networks:
+      mynet:
+        ipv4_address: 192.168.0.2
+
+
+  pgadmin:
+    container_name: pgadmin_cont
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+    ports:
+      - "5050:80"
+    restart: unless-stopped
+    networks:
+      mynet:
+        ipv4_address: 192.168.0.4
+
+  api_service:
+    container_name: sprinboot_cont
+    build: .
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      mynet:
+        ipv4_address: 192.168.0.6
